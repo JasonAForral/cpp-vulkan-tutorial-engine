@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 4.0)
+project(VulkanApp VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_COLOR_DIAGNOSTICS ON)
+set(CLICOLOR ON)
+
+set(app VulkanEngine)
+
+find_package (Vulkan REQUIRED)
+find_package (glfw3 REQUIRED)
+
+set(SOURCES_COMMON
+    src/engine.cpp
+    src/platform.cpp
+    src/renderer_core.cpp
+)
+
+
+set(SOURCES_DESKTOP
+    src/main.cpp
+)
+
+add_executable(${app} ${SOURCES_COMMON} ${SOURCES_DESKTOP})
+
+target_link_libraries(${app} PRIVATE
+    Vulkan::Vulkan
+    glfw
+)
