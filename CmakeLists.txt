@@ -13,6 +13,9 @@ set(app VulkanEngine)
 find_package (Vulkan REQUIRED)
 find_package (glfw3 REQUIRED)
 
+# find_package (VulkanHpp REQUIRED)
+
+
 set(SOURCES_COMMON
     src/engine.cpp
     src/platform.cpp
@@ -25,6 +28,25 @@ set(SOURCES_DESKTOP
 )
 
 add_executable(${app} ${SOURCES_COMMON} ${SOURCES_DESKTOP})
+
+
+if(MSVC)
+    target_compile_options(${app} PRIVATE
+        /std:c++latest
+        /permissive-
+        /Zc:__cplusplus
+        /EHsc
+        /Zc:preprocessor
+    )
+endif()
+
+# add_library(VulkanCppModule INTERFACE)
+# add_library(Vulkan::cppm ALIAS VulkanCppModule)
+# target_link_libraries(VulkanCppModule INTERFACE Vulkan::Vulkan)
+# target_compile_definitions(VulkanCppModule
+#     INTERFACE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VULKAN_HPP_NO_STRUCT_CONSTRUCTORS=1
+# )
+# target_include_directories(VulkanCppModule INTERFACE "${VulkanHpp_INCLUDE_DIRS}")
 
 target_link_libraries(${app} PRIVATE
     Vulkan::Vulkan

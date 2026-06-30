@@ -17,11 +17,17 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#define VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_hpp_macros.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 #include "platform.h"
+
 
 #ifndef VK_EXT_ROBUSTNESS_2_EXTENSION_NAME
 #define VK_EXT_ROBUSTNESS_2_EXTENSION_NAME "VK_EXT_robustness2"
@@ -39,12 +45,17 @@ public:
     explicit Renderer(Platform *platform);
     ~Renderer();
 
+    bool Initialize(const std::string& appName, bool enableValidationLayers = true);
     void cleanup();
 
 private:
     const std::vector<const char *> requiredDeviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     std::vector<const char *> deviceExtensions;
+
+    bool createInstance(const std::string& appName, bool enableValidationLayers);
+    bool setupDebugMessenger();
+    bool pickPhysicalDevice();
+    bool createLogicalDevice();
 };
