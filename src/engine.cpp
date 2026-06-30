@@ -27,9 +27,10 @@ bool Engine::Initialize(const std::string &appName, int width, int height, bool 
         std::cout << "Failed to initialize renderer" << std::endl;
         return false;
     }
+    LOGI("renderer initialized...");
 
+    std::cout << "Engine initialized successfully" << std::endl;
     initialized = true;
-    std::cout << "Platform initialized successfully" << std::endl;
     return true;
 }
 
