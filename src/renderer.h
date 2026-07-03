@@ -77,7 +77,7 @@ private:
     bool initialized = false;
 
     bool createInstance(const std::string &appName, bool enableValidationLayers);
-    // bool setupDebugMessenger();
+    bool setupDebugMessenger(bool enableValidationLayers);
     // bool pickPhysicalDevice();
     // bool createLogicalDevice();
     bool checkValidationLayerSupport() const;
