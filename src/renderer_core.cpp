@@ -45,6 +45,16 @@ bool Renderer::Initialize(const std::string &appName, bool enableValidationLayer
         std::cerr << "Failed to setup debug messenger" << std::endl;
         return false;
     }
+
+    LOGI("debug messenger created...");
+
+    if (!createSurface()) {
+        std::cerr << "Failed to create surface" << std::endl;
+        return false;
+    }
+
+    LOGI("surface created...");
+
     return true;
 }
 
@@ -66,6 +76,8 @@ void Renderer::cleanup()
     catch (...)
     {
     }
+
+    surface  = nullptr;
 
     initialized = false;
     std::cout << "Renderer cleanup completed." << std::endl;
@@ -164,6 +176,26 @@ bool Renderer::setupDebugMessenger(bool enableValidationLayers)
         std::cerr << "Failed to setup debug messenger: " << e.what() << std::endl;
         return false;
     }
+}
+
+bool Renderer::createSurface()
+{
+    try
+    {
+        VkSurfaceKHR _surface;
+        if (!platform->CreateVulkanSurface(*instance, &_surface)) {
+        std::cerr << "Failed platform request to create surface" << std::endl;
+            return false;
+        }
+        surface = vk::raii::SurfaceKHR(instance, _surface);
+        return true;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Failed to create surface: " << e.what() << std::endl;
+        return false;
+    }
+
 }
 
 bool Renderer::checkValidationLayerSupport() const

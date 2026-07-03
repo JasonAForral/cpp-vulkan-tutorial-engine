@@ -26,6 +26,9 @@ public:
     virtual bool Initialize(const std::string &appName, int width, int height) = 0;
     virtual bool ProcessEvents() = 0;
 
+
+    virtual bool CreateVulkanSurface(VkInstance instance, VkSurfaceKHR* surface) = 0;
+
 };
 
 class DesktopPlatform final : public Platform
@@ -40,6 +43,7 @@ public:
     void cleanup() override;
     bool Initialize(const std::string &appName, int width, int height) override;
     bool ProcessEvents() override;
+    bool CreateVulkanSurface(VkInstance instance, VkSurfaceKHR* surface) override;
 };
 
 template<typename... Args>

@@ -66,6 +66,8 @@ private:
     vk::raii::PhysicalDevice physicalDevice = nullptr;
     vk::raii::Device device = nullptr;
 
+    vk::raii::SurfaceKHR surface = nullptr;
+
     const std::vector<const char *> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
 
@@ -78,6 +80,7 @@ private:
 
     bool createInstance(const std::string &appName, bool enableValidationLayers);
     bool setupDebugMessenger(bool enableValidationLayers);
+    bool createSurface();
     // bool pickPhysicalDevice();
     // bool createLogicalDevice();
     bool checkValidationLayerSupport() const;

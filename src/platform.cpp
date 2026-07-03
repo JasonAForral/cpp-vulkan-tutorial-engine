@@ -4,7 +4,8 @@
 
 void DesktopPlatform::cleanup()
 {
-    if (window) {
+    if (window)
+    {
         glfwDestroyWindow(window);
         window = nullptr;
     }
@@ -38,4 +39,13 @@ bool DesktopPlatform::ProcessEvents()
 {
     glfwPollEvents();
     return !glfwWindowShouldClose(window);
+}
+
+bool DesktopPlatform::CreateVulkanSurface(VkInstance instance, VkSurfaceKHR *surface)
+{
+    if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS)
+    {
+        return false;
+    }
+    return true;
 }
