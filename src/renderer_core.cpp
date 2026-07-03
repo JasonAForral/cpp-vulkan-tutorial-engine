@@ -94,7 +94,7 @@ bool Renderer::createInstance(const std::string &appName, bool enableValidationL
 
         if (enableValidationLayers)
         {
-            extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
         vk::InstanceCreateInfo createInfo{
