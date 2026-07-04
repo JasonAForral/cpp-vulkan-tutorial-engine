@@ -128,7 +128,7 @@ set(SOURCES_COMMON
     # src/renderer_rendering.cpp
     # src/renderer_pipelines.cpp
     # src/renderer_compute.cpp
-    # src/renderer_utils.cpp
+    src/renderer_utils.cpp
     # src/renderer_resources.cpp
     # src/renderer_ray_query.cpp
     # src/memory_pool.cpp

@@ -1,5 +1,8 @@
 #include "renderer.h"
 
+#include <map>
+#include <set>
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallbackVkHpp(
@@ -48,12 +51,19 @@ bool Renderer::Initialize(const std::string &appName, bool enableValidationLayer
 
     LOGI("debug messenger created...");
 
-    if (!createSurface()) {
+    if (!createSurface())
+    {
         std::cerr << "Failed to create surface" << std::endl;
         return false;
     }
 
     LOGI("surface created...");
+
+    if (!pickPhysicalDevice())
+    {
+        std::cerr << "Failed to pick a physical device" << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -77,7 +87,7 @@ void Renderer::cleanup()
     {
     }
 
-    surface  = nullptr;
+    surface = nullptr;
 
     initialized = false;
     std::cout << "Renderer cleanup completed." << std::endl;
@@ -183,19 +193,122 @@ bool Renderer::createSurface()
     try
     {
         VkSurfaceKHR _surface;
-        if (!platform->CreateVulkanSurface(*instance, &_surface)) {
-        std::cerr << "Failed platform request to create surface" << std::endl;
+        if (!platform->CreateVulkanSurface(*instance, &_surface))
+        {
+            std::cerr << "Failed platform request to create surface" << std::endl;
             return false;
         }
         surface = vk::raii::SurfaceKHR(instance, _surface);
         return true;
     }
-    catch(const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "Failed to create surface: " << e.what() << std::endl;
         return false;
     }
+}
 
+bool Renderer::pickPhysicalDevice()
+{
+    try
+    {
+        std::vector<vk::raii::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
+
+        if (devices.empty())
+        {
+            std::cerr << "Failed to find GPUs with Vulkan Support" << std::endl;
+            return false;
+        }
+
+        std::multimap<int, vk::raii::PhysicalDevice> suitableDevices;
+
+        for (auto &_device : devices)
+        {
+            vk::PhysicalDeviceProperties deviceProperties = _device.getProperties();
+
+            std::cout << "Checking device: " << deviceProperties.deviceName
+                      << " (Type: " << vk::to_string(deviceProperties.deviceType) << "}" << std::endl;
+
+            bool supportsVulkan1_3 = deviceProperties.apiVersion >= VK_API_VERSION_1_3;
+            if (!supportsVulkan1_3)
+            {
+                std::cout << "  - Does not support Vulkan 1.3" << std::endl;
+                continue;
+            }
+
+            QueueFamilyIndices indices = findQueueFamilies(_device);
+            bool supportGraphics = indices.isComplete();
+            if (!supportGraphics)
+            {
+                std::cout << "  - Missing required queue families" << std::endl;
+                continue;
+            }
+
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_device);
+            bool swapchainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+            if (!swapchainAdequate)
+            {
+                std::cout << "  - Inadequate swap chain support" << std::endl;
+                continue;
+            }
+
+            auto features = _device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features>();
+            bool supportsRequiredFeatures = features.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering;
+            if (!supportsRequiredFeatures)
+            {
+                std::cout << "  - Does not support required features (dynamicRendering)" << std::endl;
+                continue;
+            }
+
+            int score = 0;
+
+            if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+            {
+                score += 1000;
+                std::cout << "  - Discrete GPU: +1000 points" << std::endl;
+            }
+            else if (deviceProperties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu)
+            {
+                score += 100;
+                std::cout << "  - Integrated GPU: +100 points" << std::endl;
+            }
+
+            vk::PhysicalDeviceMemoryProperties memProperties = _device.getMemoryProperties();
+            for (uint32_t i = 0; i < memProperties.memoryHeapCount; ++i)
+            {
+                if (memProperties.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal)
+                {
+                    score += static_cast<int>(memProperties.memoryHeaps[i].size / (1024 * 1024 * 1024));
+                    break;
+                }
+            }
+
+            std::cout << "  - Device is suitable with score: " << score << std::endl;
+            suitableDevices.emplace(score, _device);
+        }
+
+        if (!suitableDevices.empty())
+        {
+            physicalDevice = suitableDevices.rbegin()->second;
+            vk::PhysicalDeviceProperties deviceProperties = physicalDevice.getProperties();
+
+            std::cout << "Selected device: " << deviceProperties.deviceName
+                      << " (Type: " << vk::to_string(deviceProperties.deviceType)
+                      << ", Score: " << suitableDevices.rbegin()->first << ")" << std::endl;
+
+            queueFamilyIndices = findQueueFamilies(physicalDevice);
+
+            addSupportedOptionalExtensions();
+            return true;
+        }
+        std::cerr << "Failed to find a suitable GPU. Make sure your GPU supports Vulkan and has the required extensions." << std::endl;
+        return false;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Failed to pick physical device: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool Renderer::checkValidationLayerSupport() const
@@ -221,4 +334,28 @@ bool Renderer::checkValidationLayerSupport() const
         }
     }
     return true;
+}
+
+void Renderer::addSupportedOptionalExtensions()
+{
+    try
+    {
+        auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
+
+        std::set<std::string> avail;
+        for (const auto &e : availableExtensions)
+        {
+            avail.insert(e.extensionName);
+        }
+
+        for (const auto &optionalExt : optionalDeviceExtensions)
+        {
+            deviceExtensions.push_back(optionalExt);
+            std::cout << "Adding optional extension: " << optionalExt << std::endl;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Warning: Failed to add optional extensions: " << e.what() << std::endl;
+    }
 }

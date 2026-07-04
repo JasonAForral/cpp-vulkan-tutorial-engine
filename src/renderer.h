@@ -46,6 +46,26 @@
 #define VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME "VK_EXT_shader_tile_image"
 #endif
 
+struct QueueFamilyIndices
+{
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+    std::optional<uint32_t> computeFamily;
+    std::optional<uint32_t> transferFamily;
+
+    [[nodiscard]] bool isComplete() const
+    {
+        return graphicsFamily.has_value() && presentFamily.has_value() && computeFamily.has_value();
+    }
+};
+
+struct SwapChainSupportDetails
+{
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> presentModes;
+};
+
 class Renderer
 {
 public:
@@ -68,11 +88,30 @@ private:
 
     vk::raii::SurfaceKHR surface = nullptr;
 
+    QueueFamilyIndices queueFamilyIndices;
+
     const std::vector<const char *> validationLayers = {
         "VK_LAYER_KHRONOS_validation"};
 
     const std::vector<const char *> requiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+    // Optional device extensions
+    const std::vector<const char *> optionalDeviceExtensions = {
+        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+        VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+        // Robustness and safety
+        VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+        // Tile/local memory friendly dynamic rendering readback
+        VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_EXTENSION_NAME,
+        // Shader tile image for fast tile access
+        VK_EXT_SHADER_TILE_IMAGE_EXTENSION_NAME,
+        // Ray query support for ray-traced rendering
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_RAY_QUERY_EXTENSION_NAME};
 
     std::vector<const char *> deviceExtensions;
 
@@ -81,7 +120,12 @@ private:
     bool createInstance(const std::string &appName, bool enableValidationLayers);
     bool setupDebugMessenger(bool enableValidationLayers);
     bool createSurface();
-    // bool pickPhysicalDevice();
+    bool pickPhysicalDevice();
     // bool createLogicalDevice();
     bool checkValidationLayerSupport() const;
+    void addSupportedOptionalExtensions();
+
+    QueueFamilyIndices findQueueFamilies(const vk::raii::PhysicalDevice &device);
+    SwapChainSupportDetails querySwapChainSupport(const vk::raii::PhysicalDevice &device);
+    bool checkDeviceExtensionSupport(const vk::raii::PhysicalDevice &device);
 };
